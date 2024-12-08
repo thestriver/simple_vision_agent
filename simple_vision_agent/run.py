@@ -63,41 +63,45 @@ class SimpleVisionAgent:
             {"role": "user", "content": content}
         ]
 
-    def run(self, inputs: Dict[str, Union[str, List[str]]]) -> str:
+    def vision(self, inputs: InputSchema) -> str:
         """Run the vision agent with the given inputs."""
         logger.info("Running vision analysis")
         
-        # Extract question and images from inputs
-        question = inputs.get("question", "What can you tell me about these images?")
-        images = inputs.get("images", [])
-        if isinstance(images, str):
-            images = [images]  # Convert single image to list
-        
-        # Format messages for the API call
-        messages = self.format_messages(question, images)
-        logger.info(f"Sending request with messages: {messages}")
-        
-        # Make the API call
-        try:
-            response = completion(
-                model=self.agent_deployment.agent_config.llm_config.model,
-                messages=messages,
-                api_base=self.agent_deployment.agent_config.llm_config.api_base,
-                max_tokens=self.agent_deployment.agent_config.llm_config.max_tokens,
-                temperature=self.agent_deployment.agent_config.llm_config.temperature,
-            )
-            logger.info(f"Got response: {response}")
-            return response.choices[0].message.content
-        except Exception as e:
-            logger.error(f"Error during API call: {str(e)}")
-            raise
+        if isinstance(inputs.tool_input_data, dict):
+            # Extract question and images from input
+            question = inputs.tool_input_data.get("question", "What can you tell me about these images?")
+            images = inputs.tool_input_data.get("images", [])
+            if isinstance(images, str):
+                images = [images]  # Convert single image to list
+            
+            # Format messages for the API call
+            messages = self.format_messages(question, images)
+            logger.info(f"Sending request with messages: {messages}")
+            
+            # Make the API call
+            try:
+                response = completion(
+                    model=self.agent_deployment.agent_config.llm_config.model,
+                    messages=messages,
+                    api_base=self.agent_deployment.agent_config.llm_config.api_base,
+                    max_tokens=self.agent_deployment.agent_config.llm_config.max_tokens,
+                    temperature=self.agent_deployment.agent_config.llm_config.temperature,
+                )
+                logger.info(f"Got response: {response}")
+                return response.choices[0].message.content
+            except Exception as e:
+                logger.error(f"Error during API call: {str(e)}")
+                raise
+        else:
+            raise ValueError("Vision input must be a dictionary containing 'images' and optional 'question' keys")
 
-def run(agent_run: AgentRunInput) -> str:
+def run(agent_run: AgentRunInput, *args, **kwargs):
     """Run the agent with the given input."""
     logger.info(f"Running with inputs {agent_run.inputs.tool_input_data}")
     
     simple_vision_agent = SimpleVisionAgent(agent_run.agent_deployment)
-    return simple_vision_agent.run(agent_run.inputs.tool_input_data)
+    method = getattr(simple_vision_agent, agent_run.inputs.tool_name, None)
+    return method(agent_run.inputs)
 
 if __name__ == "__main__":
     from naptha_sdk.client.naptha import Naptha
