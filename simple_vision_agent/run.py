@@ -75,17 +75,22 @@ class SimpleVisionAgent:
         
         # Format messages for the API call
         messages = self.format_messages(question, images)
+        logger.info(f"Sending request with messages: {messages}")
         
         # Make the API call
-        response = completion(
-            model=self.agent_deployment.agent_config.llm_config.model,
-            messages=messages,
-            api_base=self.agent_deployment.agent_config.llm_config.api_base,
-            max_tokens=self.agent_deployment.agent_config.llm_config.max_tokens,
-            temperature=self.agent_deployment.agent_config.llm_config.temperature,
-        )
-        
-        return response.choices[0].message.content
+        try:
+            response = completion(
+                model=self.agent_deployment.agent_config.llm_config.model,
+                messages=messages,
+                api_base=self.agent_deployment.agent_config.llm_config.api_base,
+                max_tokens=self.agent_deployment.agent_config.llm_config.max_tokens,
+                temperature=self.agent_deployment.agent_config.llm_config.temperature,
+            )
+            logger.info(f"Got response: {response}")
+            return response.choices[0].message.content
+        except Exception as e:
+            logger.error(f"Error during API call: {str(e)}")
+            raise
 
 def run(agent_run: AgentRunInput) -> str:
     """Run the agent with the given input."""
@@ -129,3 +134,6 @@ if __name__ == "__main__":
     )
 
     response = run(agent_run)
+    logger.info("=== Vision Analysis Result ===")
+    logger.info(response)
+    logger.info("=============================")
