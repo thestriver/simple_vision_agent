@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "simple-vision-agent"
+version = "0.1.0"
+description = "A Naptha module for analyzing images using GPT-4 Vision"
+authors = ["Dean <dean@aidevmode.com>"]
+readme = "README.md"
+packages = [
+    {include = "simple_vision_agent", from="."}
+]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<=3.13"
+pydantic = "^2.7.0"
+litellm = "^1.35.15"
+naptha-sdk = {git = "https://github.com/NapthaAI/naptha-sdk.git"}
+python-dotenv = "^1.0.1"
+gitpython = "^3.1.43"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api" 
