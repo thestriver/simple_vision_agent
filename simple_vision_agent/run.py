@@ -13,30 +13,6 @@ load_dotenv()
 
 logger = get_logger(__name__)
 
-# Get current directory (simple_vision_agent directory)
-CURRENT_DIR = Path(__file__).parent
-
-def load_configs():
-    """Load both agent deployments and LLM configs from the correct location."""
-    config_dir = CURRENT_DIR / "configs"
-    
-    # Load agent deployments
-    with open(config_dir / "agent_deployments.json", "r") as f:
-        agent_deployments_data = json.load(f)
-    
-    # Load LLM configs
-    with open(config_dir / "llm_configs.json", "r") as f:
-        llm_configs_data = json.load(f)
-    
-    # Match LLM configs with agent deployments
-    llm_configs = {config["config_name"]: LLMConfig(**config) for config in llm_configs_data}
-    
-    for deployment in agent_deployments_data:
-        llm_config_name = deployment["agent_config"]["llm_config"]["config_name"]
-        deployment["agent_config"]["llm_config"] = llm_configs[llm_config_name]
-    
-    return [AgentDeployment(**deployment) for deployment in agent_deployments_data]
-
 class SimpleVisionAgent:
     def __init__(self, agent_deployment: AgentDeployment):
         self.agent_deployment = agent_deployment
@@ -105,6 +81,7 @@ def run(agent_run: AgentRunInput, *args, **kwargs):
 
 if __name__ == "__main__":
     from naptha_sdk.client.naptha import Naptha
+    from naptha_sdk.configs import load_agent_deployments
 
     naptha = Naptha()
 
@@ -129,7 +106,11 @@ if __name__ == "__main__":
     )
 
     # Load configs using our custom function
-    agent_deployments = load_configs()
+    agent_deployments = load_agent_deployments(
+        "simple_vision_agent/configs/agent_deployments.json", 
+        load_persona_data=False, 
+        load_persona_schema=False
+    )
 
     agent_run = AgentRunInput(
         inputs=input_params,
