@@ -2,7 +2,11 @@
   {
     "name": "deployment_1",
     "module": { "name": "simple_vision_agent" },
-    "node": { "ip": "localhost" },
+    "node": {
+      "ip": "node.naptha.ai",
+      "server_type": "http",
+      "http_port": 7001
+    },
     "config": {
       "config_name": "config_1",
       "llm_config": { "config_name": "model_2" },
