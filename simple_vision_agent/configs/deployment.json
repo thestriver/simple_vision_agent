@@ -1,13 +1,13 @@
 [
   {
     "name": "deployment_1",
-    "module": { "name": "module_template" },
+    "module": { "name": "simple_vision_agent" },
     "node": { "ip": "localhost" },
     "config": {
       "config_name": "config_1",
       "llm_config": { "config_name": "model_2" },
       "system_prompt": {
-        "role": "You are a helpful AI assistant.",
+        "role": "You are a helpful AI assistant that can understand and discuss images.",
         "persona": ""
       }
     }
