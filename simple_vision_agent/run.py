@@ -2,7 +2,7 @@
 from dotenv import load_dotenv
 import json
 from litellm import completion
-from naptha_sdk.schemas import AgentDeployment, AgentRunInput, LLMConfig
+from naptha_sdk.schemas import AgentRunInput, OrchestratorRunInput, EnvironmentRunInput
 import os
 from pathlib import Path
 from simple_vision_agent.schemas import InputSchema, SystemPromptSchema
@@ -14,10 +14,10 @@ load_dotenv()
 logger = get_logger(__name__)
 
 class SimpleVisionAgent:
-    def __init__(self, agent_deployment: AgentDeployment):
-        self.agent_deployment = agent_deployment
+    def __init__(self, module_run):
+        self.module_run = module_run
         self.system_prompt = SystemPromptSchema(
-            role=agent_deployment.agent_config.system_prompt["role"], 
+            role=module_run.deployment.config.system_prompt["role"], 
             persona=None
         )
 
@@ -57,11 +57,11 @@ class SimpleVisionAgent:
             # Make the API call
             try:
                 response = completion(
-                    model=self.agent_deployment.agent_config.llm_config.model,
+                    model=self.module_run.deployment.config.llm_config.model,
                     messages=messages,
-                    api_base=self.agent_deployment.agent_config.llm_config.api_base,
-                    max_tokens=self.agent_deployment.agent_config.llm_config.max_tokens,
-                    temperature=self.agent_deployment.agent_config.llm_config.temperature,
+                    api_base=self.module_run.deployment.config.llm_config.api_base,
+                    max_tokens=self.module_run.deployment.config.llm_config.max_tokens,
+                    temperature=self.module_run.deployment.config.llm_config.temperature,
                 )
                 logger.info(f"Got response: {response}")
                 return response.choices[0].message.content
@@ -71,31 +71,29 @@ class SimpleVisionAgent:
         else:
             raise ValueError("Vision input must be a dictionary containing 'images' and optional 'question' keys")
 
-def run(agent_run: AgentRunInput, *args, **kwargs):
+def run(module_run, *args, **kwargs):
     """Run the agent with the given input."""
-    logger.info(f"Running with inputs {agent_run.inputs.tool_input_data}")
+    logger.info(f"Running with inputs {module_run.inputs.tool_input_data}")
     
-    simple_vision_agent = SimpleVisionAgent(agent_run.agent_deployment)
-    method = getattr(simple_vision_agent, agent_run.inputs.tool_name, None)
-    return method(agent_run.inputs)
+    simple_vision_agent = SimpleVisionAgent(module_run)
+    method = getattr(simple_vision_agent, module_run.inputs.tool_name, None)
+    return method(module_run.inputs)
 
 if __name__ == "__main__":
+    import asyncio
     from naptha_sdk.client.naptha import Naptha
-    from naptha_sdk.configs import load_agent_deployments
+    from naptha_sdk.configs import setup_module_deployment
+    import os
 
     naptha = Naptha()
 
-    # Example usage with multiple images
-    # input_params = InputSchema(
-    #     tool_name="vision",
-    #     tool_input_data={
-    #         "images": [
-    #             "https://docs.naptha.ai/assets/images/multi-node-flow-16da22dde6a48a22fabc86ed40d1bbd6.png",
-    #             "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
-    #         ],
-    #         "question": "What can you tell me about these images? What are the differences between them?"
-    #     }
-    # )
+    # Setup deployment using the new configuration
+    deployment = asyncio.run(setup_module_deployment(
+        "agent", 
+        "simple_vision_agent/configs/deployment.json", 
+        node_url=os.getenv("NODE_URL")
+    ))
+
     # Example usage with a single image
     input_params = InputSchema(
         tool_name="vision",
@@ -105,20 +103,13 @@ if __name__ == "__main__":
         }
     )
 
-    # Load configs using our custom function
-    agent_deployments = load_agent_deployments(
-        "simple_vision_agent/configs/agent_deployments.json", 
-        load_persona_data=False, 
-        load_persona_schema=False
-    )
-
-    agent_run = AgentRunInput(
+    module_run = AgentRunInput(
         inputs=input_params,
-        agent_deployment=agent_deployments[0],
+        deployment=deployment,
         consumer_id=naptha.user.id,
     )
 
-    response = run(agent_run)
+    response = run(module_run)
     logger.info("=== Vision Analysis Result ===")
     logger.info(response)
     logger.info("=============================")
