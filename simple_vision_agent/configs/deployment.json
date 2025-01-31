@@ -6,7 +6,7 @@
       "description": "Simple Vision Agent for Image Analysis",
       "parameters": "{tool_name: str, tool_input_data: str}",
       "module_type": "agent",
-      "module_version": "v0.2",
+      "module_version": "v0.5",
       "module_entrypoint": "run.py",
       "execution_type": "package"
     },
