@@ -1,14 +1,22 @@
 [
   {
-    "name": "deployment_1",
-    "module": { "name": "simple_vision_agent" },
+    "name": "agent_deployment_1",
+    "module": {
+      "name": "simple_vision_agent",
+      "description": "Simple Vision Agent for Image Analysis",
+      "parameters": "{tool_name: str, tool_input_data: str}",
+      "module_type": "agent",
+      "module_version": "v0.2",
+      "module_entrypoint": "run.py",
+      "execution_type": "package"
+    },
     "node": {
       "ip": "node.naptha.ai",
       "server_type": "http",
       "http_port": 7001
     },
     "config": {
-      "config_name": "config_1",
+      "config_name": "agent_config_1",
       "llm_config": { "config_name": "model_2" },
       "system_prompt": {
         "role": "You are a helpful AI assistant that can understand and discuss images.",
